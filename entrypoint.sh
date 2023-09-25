@@ -54,7 +54,7 @@ fi
 
 if [ -z "${WIKI_COMMIT_MESSAGE:-}" ]; then
     debug "WIKI_COMMIT_MESSAGE not set, using default"
-    WIKI_COMMIT_MESSAGE="chore(docs): Sync $SOURCE to $DESTINATION [skip-cd]"
+    WIKI_COMMIT_MESSAGE="Sync $SOURCE to $DESTINATION"
 fi
 
 ###############################################################################
@@ -85,9 +85,9 @@ tmp_dir=$(mktemp -d -t ci-XXXXXXXXXX)
 ###############################################################################
 debug "Checking diff between $SOURCE and $DESTINATION"
 
-# diff returns -1 if there are differences, which exits 
+# diff returns -1 if there are differences, which exits
 # the workflow. || is used to bypass this exiting prematurely
-DIFF=$(diff -qr --exclude=.git $SYNC_DIRECTORY $tmp_dir || true) 
+DIFF=$(diff -qr --exclude=.git $SYNC_DIRECTORY $tmp_dir || true)
 
 if [ "$DIFF" != "" ]; then
   debug "Syncing contents of $SOURCE to $DESTINATION"
@@ -113,19 +113,20 @@ if [ "$DIFF" != "" ]; then
 
       ### Workaround: add github workspace as safe directory
       git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      
+
       # develop could have been modified by the time we get here, so pull before pushing
       # Maybe don't need if we checkout develop...
       # git pull --ff-only origin develop
-      
+
+      git checkout -b $BRANCH$GITHUB_RUN_ID
       git add .
       git commit -m "$WIKI_COMMIT_MESSAGE"
-      git push origin $BRANCH
+      git push origin $BRANCH$GITHUB_RUN_ID
     )
   fi
-else 
+else
     warning "No file diff between $SOURCE and $DESTINATION. Exiting."
-fi 
+fi
 
 rm -rf "$tmp_dir"
 debug "Finished - $SOURCE synced to $DESTINATION"
